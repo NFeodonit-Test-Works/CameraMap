@@ -1,11 +1,13 @@
 ﻿
 var map;
+var carMarker;
 
 
 function initialize(carLat, carLng) {
   var carCoordinates = new google.maps.LatLng(carLat, carLng);
 
   var mapOptions = {
+//    zoom: 6,
     zoom: 12,
     center: carCoordinates,
     mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -13,13 +15,13 @@ function initialize(carLat, carLng) {
 
   map =  new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
-  var carMarker = new google.maps.Marker({
+  carMarker = new google.maps.Marker({
     position: carCoordinates,
     map: map,
     draggable: true
   });
 
-  google.maps.event.addListener(carMarker, 'dragend', function() {
+  google.maps.event.addListener(carMarker, 'position_changed', function() {
     mapCameras.carPositionChanged(carMarker.getPosition().lat(),
         carMarker.getPosition().lng());
   });
@@ -36,6 +38,13 @@ function setCameraJS(cameraLat, cameraLng) {
     map: map,
     icon: "http://speed-control.by/administrator/components/com_zhyandexmap/assets/icons/default%23.png"
   });
+}
+
+
+function setCarLocationJS(carLat, carLng) {
+  var carCoordinates = new google.maps.LatLng(carLat, carLng);
+  map.setCenter(carCoordinates);
+  carMarker.setPosition(carCoordinates);
 }
 
 

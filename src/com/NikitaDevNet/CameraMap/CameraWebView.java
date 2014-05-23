@@ -1,6 +1,7 @@
 package com.NikitaDevNet.CameraMap;
 
 import android.content.Context;
+import android.location.Location;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.util.AttributeSet;
@@ -21,9 +22,6 @@ import java.lang.Double;
 
 public class CameraWebView extends WebView {
 
-	private final Double carLat = 53.91456666667;
-	private final Double carLng = 27.237;
-
 	private final Double cameraLat = 53.91213888889;
 	private final Double cameraLng = 27.25102777778;
 
@@ -32,6 +30,7 @@ public class CameraWebView extends WebView {
 	private Double distanceToCamera = distanceThreshold;
 
 
+	private JavaScriptInterface javaScriptInterface;
 	private SoundPool soundPool;
 	private int soundID;
 	private boolean soundLoaded = false;
@@ -49,7 +48,8 @@ public class CameraWebView extends WebView {
 		setFocusableInTouchMode(true);
 //		setWebViewClient(new WebViewClient());
 
-		addJavascriptInterface(new JavaScriptInterface(mContext), "mapCameras");
+		javaScriptInterface = new JavaScriptInterface(mContext);
+		addJavascriptInterface(javaScriptInterface, "mapCameras");
 
 
 		soundPool = new SoundPool(10, AudioManager.STREAM_ALARM, 0);
@@ -61,13 +61,10 @@ public class CameraWebView extends WebView {
 			}
 		});
 		soundID = soundPool.load(mContext, R.raw.sound1, 1);
-
-
-		setHtml();
 	}
 
 
-	public void setHtml() {
+	public void setMap(Double carLat, Double carLng) {
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html>\r\n");
 		html.append("<html>\r\n");
@@ -107,6 +104,11 @@ public class CameraWebView extends WebView {
 	}
 
 
+	public void setCarLocation(Location location) {
+		javaScriptInterface.setCarLocation(location);
+	}
+
+
 	private final class JavaScriptInterface {
 
 		private Context mContext;
@@ -128,6 +130,19 @@ public class CameraWebView extends WebView {
 					}
 				});
 //			}
+		}
+
+
+// for API +17
+//		@JavascriptInterface
+		public void setCarLocation(final Location location) {
+			post(new Runnable() {
+				@Override
+				public void run() {
+					loadUrl("javascript: setCarLocationJS(" +
+							location.getLatitude() + ", " + location.getLongitude() + ");");
+				}
+			});
 		}
 
 
