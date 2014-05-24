@@ -66,7 +66,8 @@ public class CameraMapActivity extends Activity {
 
 
 	// При восстановлении окна программы подключаемся к провайдерам
-	// для определения координат
+	// для определения координат.
+	// Считываем показания каждые 50 метров.
 	@Override
 	protected void onResume() {
 		super.onResume();
