@@ -40,7 +40,7 @@ function initJS(carLat, carLng) {
 
 
 // Усанавливает маркер камеры в заданные координаты.
-// Если флаг доступности сайта зброшен,
+// Если флаг доступности сайта сброшен,
 // устанавливает значок для маркера камеры по умолчанию.
 function setCameraJS(cameraLat, cameraLng, isSiteOK) {
 	var cameraPosition = new google.maps.LatLng(cameraLat, cameraLng);
