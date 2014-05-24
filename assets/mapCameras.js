@@ -1,12 +1,17 @@
 ﻿
+// Карта
 var map;
+// Маркер автомобиля
 var carMarker;
+// Массив маркеров камер
 var camerasArray = [];
 
 
+// Инициализация карты
 function initJS(carLat, carLng) {
 	var carPosition = new google.maps.LatLng(carLat, carLng);
 
+	// Устанавливаем центр карты по координатам автомобиля
 	var mapOptions = {
 		zoom: 6,
 //		zoom: 14,
@@ -16,20 +21,27 @@ function initJS(carLat, carLng) {
 
 	map =  new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
+	// Маркер автомобиля, перемещаемый
 	carMarker = new google.maps.Marker({
 		position: carPosition,
 		map: map,
 		draggable: true
 	});
 
+	// При изменении позиции маркера автомобиля вычисляем расстояние до камер.
+	// При приближении выдаем предупреждение.
 	google.maps.event.addListener(carMarker, 'position_changed', function() {
 		getDistanceToCameraJS(carMarker.getPosition());
 	});
 
+	// Устанавливем камеры на карту
 	mapCameras.setCameras();
 }
 
 
+// Усанавливает маркер камеры в заданные координаты.
+// Если флаг доступности сайта зброшен,
+// устанавливает значок для маркера камеры по умолчанию.
 function setCameraJS(cameraLat, cameraLng, isSiteOK) {
 	var cameraPosition = new google.maps.LatLng(cameraLat, cameraLng);
 
@@ -53,6 +65,7 @@ function setCameraJS(cameraLat, cameraLng, isSiteOK) {
 }
 
 
+// Усанавливает маркер автомобиля и центр карты в заданную позицию.
 function setCarLocationJS(carLat, carLng) {
 	var carPosition = new google.maps.LatLng(carLat, carLng);
 	map.setCenter(carPosition);
@@ -60,6 +73,7 @@ function setCarLocationJS(carLat, carLng) {
 }
 
 
+// По заданному положению автомобиля вычисляет ближайшую камеру.
 function getDistanceToCameraJS(carPosition) {
 
 	if (camerasArray) {
@@ -75,6 +89,7 @@ function getDistanceToCameraJS(carPosition) {
 				minDistance = distance;
 	   }
 
+		// Передаем расстояние до ближайшей камеры
 		mapCameras.setDistanceToCamera(minDistance);
 	}
 }

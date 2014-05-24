@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 
 
 
+// Главное окно программы.
 public class CameraMapActivity extends Activity {
 
 	private CameraWebView cameraWebView;
@@ -36,16 +37,21 @@ public class CameraMapActivity extends Activity {
 
 		Location location = null;
 
+
+		// Получаем последние известные координаты из сети ...
 		if (locationManager.getProvider(LocationManager.NETWORK_PROVIDER) != null) {
 			location = locationManager.getLastKnownLocation(
 					LocationManager.NETWORK_PROVIDER);
 		}
 
+		// ... или от GPS (опрашиваем последним, потому что точнее)
 		if (locationManager.getProvider(LocationManager.GPS_PROVIDER) != null) {
 			location = locationManager.getLastKnownLocation(
 					LocationManager.GPS_PROVIDER);
 		}
 
+		// Если определение координат не доступно,
+		// устанавливаем примерный центр Беларуси
 		if (location != null) {
 			cameraWebView.setMap(location.getLatitude(), location.getLongitude());
 		} else {
@@ -53,11 +59,14 @@ public class CameraMapActivity extends Activity {
 		}
 
 
+		// Запрашиваем список камер
 		new AsyncTaskRequestCameras()
 				.execute("http://speed-control.by/index.php/ru/equipment-ru");
 	}
 
 
+	// При восстановлении окна программы подключаемся к провайдерам
+	// для определения координат
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -74,6 +83,8 @@ public class CameraMapActivity extends Activity {
 	}
 
 
+	// При невидимом окне программы отключаемся от провайдеров
+	// для экономии ресурсов
 	@Override
 	protected void onPause() {
 		super.onPause();
@@ -81,8 +92,10 @@ public class CameraMapActivity extends Activity {
 	}
 
 
+	// Слушатель изменения состояния провайдера координат
 	private LocationListener locationListener = new LocationListener() {
 
+		// При изменении позиции перемещаем маркер автомобиля на новое место
 		@Override
 		public void onLocationChanged(Location location) {
 			cameraWebView.setCarLocation(location);
@@ -102,6 +115,7 @@ public class CameraMapActivity extends Activity {
 	};
 
 
+	// По заданному url возвращает полученный запрос как строку
 	public static String getHttpResponse(String url){
 		InputStream inputStream = null;
 		String result = "";
@@ -122,6 +136,7 @@ public class CameraMapActivity extends Activity {
 	}
 
 
+	// Преобразует полученный поток в строку
 	private static String convertInputStreamToString(InputStream inputStream)
 			throws IOException{
 
@@ -138,8 +153,10 @@ public class CameraMapActivity extends Activity {
 	}
 
 
+	// Запускает задачу в фоне
 	private class AsyncTaskRequestCameras extends AsyncTask<String, Void, String> {
 
+		// В фоне запускаем получение запроса с сайта
 		@Override
 		protected String doInBackground(String... urls) {
 			return getHttpResponse(urls[0]);
@@ -150,6 +167,8 @@ public class CameraMapActivity extends Activity {
 
 			boolean isSiteOK = true;
 
+			// Если запрос не удался, берем текст запроса из файла ресурса и
+			// сбрасываем флаг доступности сайта
 			if (result.length() == 0) {
 				isSiteOK = false;
 
@@ -164,6 +183,8 @@ public class CameraMapActivity extends Activity {
 					}
 			}
 
+			// По полученному запросу устанавливаем камеры на карте,
+			// передаем флаг доступности сайта
 			cameraWebView.setCameras(result, isSiteOK);
 		}
 	}

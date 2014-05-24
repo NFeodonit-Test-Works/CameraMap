@@ -22,9 +22,13 @@ import java.util.regex.Pattern;
  */
 
 
+// Отображает карту и взаимодействует с ней.
 public class CameraWebView extends WebView {
 
+	// Порог срабатывания для расстояния до камеры
 	private final Double distanceThreshold = 500.0;
+
+	// Старое и новое расстояния до камеры для определения факта приближения
 	private Double distanceToCameraOld = distanceThreshold;
 	private Double distanceToCamera = distanceThreshold;
 
@@ -45,13 +49,19 @@ public class CameraWebView extends WebView {
 
 		setFocusable(true);
 		setFocusableInTouchMode(true);
+		// Необходим, если нужен переход по ссылкам в нашем окне программы
 //		setWebViewClient(new WebViewClient());
 
+		// Устанавливаем интерфейс взаимодействия со JS-скриптом
 		javaScriptInterface = new JavaScriptInterface(mContext);
+		// По имени "mapCameras" обращаемся к функциям интерфейса из JS-скрипта
 		addJavascriptInterface(javaScriptInterface, "mapCameras");
 
 
+		// STREAM_ALARM -- выдаем звук, даже если звук отключен
 		soundPool = new SoundPool(10, AudioManager.STREAM_ALARM, 0);
+
+		// Выставляем флаг успешности загрузки файла звука
 		soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
 			@Override
 			public void onLoadComplete(SoundPool soundPool, int sampleId,
@@ -59,10 +69,13 @@ public class CameraWebView extends WebView {
 				soundLoaded = true;
 			}
 		});
+
+		// Загружаем файл звука
 		soundID = soundPool.load(mContext, R.raw.sound1, 1);
 	}
 
 
+	// Загружает карту, устанавливая центр по координатам carLat и carLng
 	public void setMap(Double carLat, Double carLng) {
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html>\r\n");
@@ -76,6 +89,8 @@ public class CameraWebView extends WebView {
 		html.append("body { height: 100%; margin: 0; padding: 0 }\r\n");
 		html.append("</style>\r\n");
 
+		// Подключаем Google Maps API,
+		// указываем требуемый ключ key, подключаем доп. библиотеку geometry
 		html.append("<script language=\"JavaScript\" " +
 				"src=\"http://maps.googleapis.com/maps/api/js?" +
 				"key=AIzaSyCHiUkI0Vyxbrzo4AGRT6qmsdXV0INmQd0&" +
@@ -83,12 +98,14 @@ public class CameraWebView extends WebView {
 				"sensor=false\" " +
 				"type=\"text/javascript\"></script>\r\n");
 
+		// Подключаем наш скрипт
 		html.append("<script language=\"JavaScript\" " +
 				"src=\"file:///android_asset/mapCameras.js\" " +
 				"type=\"text/javascript\"></script>\r\n");
 
 		html.append("</head>\r\n");
 
+		// Точка входа в скрипт
 		html.append("<body onload=\"initJS(" +
 				carLat + ", " + carLng + ")\">\r\n");
 
@@ -103,8 +120,13 @@ public class CameraWebView extends WebView {
 	}
 
 
+	// По полученному тексту запроса парсит координаты камер,
+	// по которым устанавливает маркеры камер на карту.
+	// Если флаг доступности сайта зброшен,
+	// устанавливает значок для маркера камеры по умолчанию.
 	public void setCameras(String httpResponse, boolean isSiteOK) {
 
+		// Начинаем с "default%23.png", чтобы отсеять ПКО
 		Matcher matcher = Pattern.compile(
 				"default%23\\.png\";\\s{0,}" +
 						"s\\d{1,20}\\.iconStyle\\.size\\s{0,}=\\s{0,}new\\s{0,}" +
@@ -113,6 +135,7 @@ public class CameraWebView extends WebView {
 						"(\\d{1,2}\\.\\d{1,20}),\\s{0,}" +
 						"(\\d{1,2}\\.\\d{1,20})\\);").matcher(httpResponse);
 
+		// У Yandex обратный порядок указания координат
 		while (matcher.find()) {
 			String sLat = matcher.group(2);
 			String sLng = matcher.group(1);
@@ -124,11 +147,13 @@ public class CameraWebView extends WebView {
 	}
 
 
+	// Устанавливает маркер автомобиля в заданную позицию
 	public void setCarLocation(Location location) {
 		javaScriptInterface.setCarLocation(location);
 	}
 
 
+	// Интерфейс для взаимодействия со JS-скриптом
 	private final class JavaScriptInterface {
 
 		private Context mContext;
@@ -138,6 +163,9 @@ public class CameraWebView extends WebView {
 		}
 
 
+		// Усанавливает маркер камеры в заданные координаты.
+		// Если флаг доступности сайта зброшен,
+		// устанавливает значок для маркера камеры по умолчанию.
 // for API +17
 //		@JavascriptInterface
 		public void setCamera(final String camLat, final String camLng,
@@ -152,6 +180,7 @@ public class CameraWebView extends WebView {
 		}
 
 
+		// Усанавливает маркер автомобиля в заданную позицию.
 // for API +17
 //		@JavascriptInterface
 		public void setCarLocation(final Location location) {
@@ -165,6 +194,8 @@ public class CameraWebView extends WebView {
 		}
 
 
+		// Выдает предупреждение (текст и звук) при приближении к камере,
+		// если дистанция до камеры меньше порога срабатывания.
 // for API +17
 //		@JavascriptInterface
 		public void setDistanceToCamera(String distance) {
@@ -178,6 +209,8 @@ public class CameraWebView extends WebView {
 						distanceToCamera.intValue() + " m",
 						Toast.LENGTH_SHORT).show();
 
+				// Выдаем звук на полной громкости на обоих каналах,
+				// повторяем сигнал три раза
 				if (soundLoaded) {
 					soundPool.play(soundID, 1, 1, 1, 2, 1f);
 				}
