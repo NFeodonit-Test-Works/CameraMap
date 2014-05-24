@@ -9,6 +9,8 @@ import android.webkit.*;
 import android.widget.Toast;
 
 import java.lang.Double;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -21,9 +23,6 @@ import java.lang.Double;
 
 
 public class CameraWebView extends WebView {
-
-	private final Double cameraLat = 53.91213888889;
-	private final Double cameraLng = 27.25102777778;
 
 	private final Double distanceThreshold = 500.0;
 	private Double distanceToCameraOld = distanceThreshold;
@@ -90,7 +89,7 @@ public class CameraWebView extends WebView {
 
 		html.append("</head>\r\n");
 
-		html.append("<body onload=\"initialize(" +
+		html.append("<body onload=\"initJS(" +
 				carLat + ", " + carLng + ")\">\r\n");
 
 		html.append("<div id=\"map_canvas\" " +
@@ -101,6 +100,27 @@ public class CameraWebView extends WebView {
 
 		loadDataWithBaseURL("about:blank", html.toString(),
 				"text/html", "UTF-8", "about:blank");
+	}
+
+
+	public void setCameras(String httpResponse, boolean isSiteOK) {
+
+		Matcher matcher = Pattern.compile(
+				"default%23\\.png\";\\s{0,}" +
+						"s\\d{1,20}\\.iconStyle\\.size\\s{0,}=\\s{0,}new\\s{0,}" +
+						"YMaps\\.Point\\(\\d{1,20}\\s{0,},\\s{0,}\\d{1,20}\\);\\s{0,}" +
+						"var\\s{1,}lnglat\\d{1,20}\\s{0,}=\\s{0,}new\\s{1,}YMaps\\.GeoPoint\\(" +
+						"(\\d{1,2}\\.\\d{1,20}),\\s{0,}" +
+						"(\\d{1,2}\\.\\d{1,20})\\);").matcher(httpResponse);
+
+		while (matcher.find()) {
+			String sLat = matcher.group(2);
+			String sLng = matcher.group(1);
+
+			javaScriptInterface.setCamera(sLat, sLng, isSiteOK);
+
+			matcher.region(matcher.end(), httpResponse.length());
+		}
 	}
 
 
@@ -120,16 +140,15 @@ public class CameraWebView extends WebView {
 
 // for API +17
 //		@JavascriptInterface
-		public void setCameras() {
-//			for (final Integer camera : cameras) {
-				post(new Runnable() {
-					@Override
-					public void run() {
-						loadUrl("javascript: setCameraJS(" +
-								cameraLat + ", " + cameraLng + ");");
-					}
-				});
-//			}
+		public void setCamera(final String camLat, final String camLng,
+									 final boolean isSiteOK) {
+			post(new Runnable() {
+				@Override
+				public void run() {
+					loadUrl("javascript: setCameraJS(" +
+							camLat + ", " + camLng +  ", " + isSiteOK + ");");
+				}
+			});
 		}
 
 
@@ -165,20 +184,5 @@ public class CameraWebView extends WebView {
 
 			}
 		}
-
-
-// for API +17
-//		@JavascriptInterface
-		public void carPositionChanged(final String carLat, final String carLng) {
-			post(new Runnable() {
-				@Override
-				public void run() {
-					loadUrl("javascript: getDistanceJS(" +
-							carLat + ", " + carLng + ", " +
-							cameraLat + ", " + cameraLng + ");");
-				}
-			});
-		}
-
 	}
 }

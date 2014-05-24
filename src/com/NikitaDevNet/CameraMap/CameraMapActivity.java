@@ -4,7 +4,20 @@ import android.app.Activity;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
+
 
 public class CameraMapActivity extends Activity {
 
@@ -39,8 +52,9 @@ public class CameraMapActivity extends Activity {
 			cameraWebView.setMap(53.645, 28.125);
 		}
 
-// TODO: for debug
-		cameraWebView.setMap(53.91456666667, 27.237);
+
+		new AsyncTaskRequestCameras()
+				.execute("http://speed-control.by/index.php/ru/equipment-ru");
 	}
 
 
@@ -87,4 +101,70 @@ public class CameraMapActivity extends Activity {
 		}
 	};
 
+
+	public static String getHttpResponse(String url){
+		InputStream inputStream = null;
+		String result = "";
+
+		try {
+			HttpClient httpclient = new DefaultHttpClient();
+			HttpResponse httpResponse = httpclient.execute(new HttpGet(url));
+			inputStream = httpResponse.getEntity().getContent();
+
+			if(inputStream != null)
+				result = convertInputStreamToString(inputStream);
+
+		} catch (Exception e) {
+			return "";
+		}
+
+		return result;
+	}
+
+
+	private static String convertInputStreamToString(InputStream inputStream)
+			throws IOException{
+
+		BufferedReader bufferedReader = new BufferedReader(
+				new InputStreamReader(inputStream));
+
+		String line;
+		String result = "";
+		while((line = bufferedReader.readLine()) != null)
+			result += line;
+
+		inputStream.close();
+		return result;
+	}
+
+
+	private class AsyncTaskRequestCameras extends AsyncTask<String, Void, String> {
+
+		@Override
+		protected String doInBackground(String... urls) {
+			return getHttpResponse(urls[0]);
+		}
+
+		@Override
+		protected void onPostExecute(String result) {
+
+			boolean isSiteOK = true;
+
+			if (result.length() == 0) {
+				isSiteOK = false;
+
+				InputStream inputStream = getApplication().getApplicationContext()
+						.getResources().openRawResource(R.raw.speedcontrol);
+
+				if(inputStream != null)
+					try {
+						result = convertInputStreamToString(inputStream);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+			}
+
+			cameraWebView.setCameras(result, isSiteOK);
+		}
+	}
 }
